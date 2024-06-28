@@ -1,0 +1,60 @@
+---
+# Installation de Docker
+- name: Maj du cache APT
+  apt: 
+    update_cache: yes
+    upgrade: "yes"
+- name: Installation dependances pour Docker
+  apt: 
+    name: "{{ item }}"
+    state: latest        
+  loop:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+    - lsb-release
+    - gnupg
+    - python3-pip
+    - virtualenv
+    - python3-setuptools
+- name: Add Docker GPG apt Key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+    state: present
+
+- name: Update apt and install docker-ce
+  apt: 
+    update_cache: yes 
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+- name: Install Docker Module for Python
+  pip:
+    name: docker    
+- name: Ensure group "docker" exists with correct gid
+  ansible.builtin.group:
+    name: docker
+    state: present
+    gid: 1750
+- name: Add the remote user with a bash shell, appending the group 'docker'
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+- name: Configure docker to start on boot
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop: 
+    - docker
+    - containerd
