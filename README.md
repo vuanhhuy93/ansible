@@ -38,4 +38,11 @@ You have to execute the script with the following command (assuming you are in t
 ansible-playbook -i hosts/dev playbook.yml 
 ```
 
+## check server
 
+ansible -i hosts/bo-prod-server java -m ping
+
+
+## install java 21
+
+ansible-playbook -i hosts/bo-prod-server java playbook-install-java21.yml

@@ -1,0 +1,114 @@
+---
+- name: Install and configure Zookeeper
+  hosts: zookeeper
+  become: yes
+  tasks:
+    - name: Create zookeeper user
+      user:
+        name: zookeeper
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Set password for zookeeper user
+      user:
+        name: zookeeper
+        password: "{{ 'your_password' | password_hash('sha512') }}"
+
+    - name: Add zookeeper user to sudo group
+      user:
+        name: zookeeper
+        groups: sudo
+        append: yes
+
+    - name: Verify zookeeper user in sudo group
+      command: getent group sudo
+      register: sudo_group
+    - name: Display sudo group members
+      debug:
+        msg: "{{ sudo_group.stdout }}"
+
+    - name: Create directory /data/zookeeper
+      file:
+        path: /data/zookeeper
+        state: directory
+        owner: zookeeper
+        group: zookeeper
+        mode: '0755'
+
+    - name: Download Zookeeper
+      get_url:
+        url: https://dlcdn.apache.org/zookeeper/zookeeper-3.8.4/apache-zookeeper-3.8.4-bin.tar.gz
+        dest: /opt/apache-zookeeper-3.8.4-bin.tar.gz
+
+    - name: Extract Zookeeper
+      unarchive:
+        src: /opt/apache-zookeeper-3.8.4-bin.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename Zookeeper directory
+      command: mv /opt/apache-zookeeper-3.8.4-bin /opt/zookeeper
+
+    - name: Change ownership of Zookeeper directory
+      file:
+        path: /opt/zookeeper
+        state: directory
+        owner: zookeeper
+        group: zookeeper
+        recurse: yes
+
+    - name: Create Zookeeper configuration file
+      copy:
+        dest: /opt/zookeeper/conf/zoo.cfg
+        content: |
+          tickTime = 2000
+          dataDir = /data/zookeeper
+          clientPort = 2181
+          initLimit = 5
+          syncLimit = 2
+        owner: zookeeper
+        group: zookeeper
+        mode: '0644'
+
+    - name: Create systemd service file for Zookeeper
+      copy:
+        dest: /etc/systemd/system/zookeeper.service
+        content: |
+          [Unit]
+          Description=Zookeeper Daemon
+          Documentation=http://zookeeper.apache.org
+          Requires=network.target
+          After=network.target
+
+          [Service]
+          Type=forking
+          WorkingDirectory=/opt/zookeeper
+          User=zookeeper
+          Group=zookeeper
+          ExecStart=/opt/zookeeper/bin/zkServer.sh start /opt/zookeeper/conf/zoo.cfg
+          ExecStop=/opt/zookeeper/bin/zkServer.sh stop /opt/zookeeper/conf/zoo.cfg
+          ExecReload=/opt/zookeeper/bin/zkServer.sh restart /opt/zookeeper/conf/zoo.cfg
+          TimeoutSec=30
+          Restart=on-failure
+
+          [Install]
+          WantedBy=default.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Start Zookeeper service
+      systemd:
+        name: zookeeper
+        state: started
+        enabled: yes
+
+    - name: Check Zookeeper service status
+      command: systemctl status zookeeper
+      register: zookeeper_status
+
+    - name: Display Zookeeper service status
+      debug:
+        msg: "{{ zookeeper_status.stdout }}"

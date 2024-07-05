@@ -1,0 +1,7 @@
+---
+- name: Set timezone server to UCT
+  hosts: all
+  become: yes
+  tasks:
+    - name: set server time zone to ETC
+      command: timedatectl set-timezone UTC

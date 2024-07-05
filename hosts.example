@@ -1,0 +1,2 @@
+[all]
+app01 ansible_host=x.x.x.x  ansible_ssh_user=root   ansible_ssh_pass=xxxxx  ansible_sudo_pass=xxxxxansible_ssh_extra_args='-o StrictHostKeyChecking=no'

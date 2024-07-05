@@ -1,0 +1,71 @@
+---
+- name: Install PostgreSQL 15
+  hosts: pg
+  become: yes
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Create directory /usr/share/postgresql-common/pgdg
+      file:
+        path: /usr/share/postgresql-common/pgdg
+        state: directory
+        mode: '0755'
+
+    - name: Download PostgreSQL GPG key
+      get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+
+    - name: Add PostgreSQL APT repository
+      shell: |
+        echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+    - name: Update APT package index
+      apt:
+        update_cache: yes
+
+    - name: Install PostgreSQL 15 and contrib
+      apt:
+        name:
+          - postgresql-15
+          - postgresql-contrib-15
+        state: present
+
+    - name: Start PostgreSQL service
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Install PostgreSQL client 15
+      apt:
+        name: postgresql-client-15
+        state: present
+
+    - name: Allow PostgreSQL port 5432 through UFW
+      ufw:
+        rule: allow
+        port: 5432
+        proto: tcp
+
+    - name: Check PostgreSQL client versions
+      shell: apt list -a postgresql-client
+      register: pg_client_versions
+
+    - name: Display PostgreSQL client versions
+      debug:
+        msg: "{{ pg_client_versions.stdout }}"
+
+    - name: Check PostgreSQL service status
+      command: systemctl status postgresql
+      register: pg_service_status
+
+    - name: Display PostgreSQL service status
+      debug:
+        msg: "{{ pg_service_status.stdout }}"

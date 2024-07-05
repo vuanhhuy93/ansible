@@ -1,0 +1,35 @@
+---
+- name: Install JRE 21
+  hosts: java
+  become: yes
+  tasks:
+    - name: Create directory /usr/lib/jvm
+      file:
+        path: /usr/lib/jvm
+        state: directory
+        mode: '0755'
+
+    - name: Download JRE 21 tar.gz
+      get_url:
+        url: https://builds.openlogic.com/downloadJDK/openlogic-openjdk-jre/21.0.3+9/openlogic-openjdk-jre-21.0.3+9-linux-x64.tar.gz
+        dest: /usr/lib/jvm/openlogic-openjdk-jre-21.0.3+9-linux-x64.tar.gz
+
+    - name: Extract JRE 21 tar.gz
+      unarchive:
+        src: /usr/lib/jvm/openlogic-openjdk-jre-21.0.3+9-linux-x64.tar.gz
+        dest: /usr/lib/jvm/
+        remote_src: yes
+
+    - name: Rename JRE directory
+      command: mv /usr/lib/jvm/openlogic-openjdk-jre-21.0.3+9-linux-x64 /usr/lib/jvm/openlogic-openjdk-jre-21
+
+    - name: Install JRE 21 alternative
+      command: update-alternatives --install "/usr/bin/java" "java" "/usr/lib/jvm/openlogic-openjdk-jre-21/bin/java" 0
+
+    - name: List Java alternatives
+      command: update-alternatives --list java
+      register: java_list
+
+    - name: Display Java alternatives
+      debug:
+        msg: "{{ java_list.stdout }}"
