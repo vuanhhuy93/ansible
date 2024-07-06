@@ -1,0 +1,48 @@
+- name: Install nginx
+  hosts: nginx
+  become: yes
+  tasks:
+    - name: Install nginx
+      apt:
+        name:
+          - nginx
+        state: present
+        update_cache: yes
+    - name: Install certbot
+      apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: present
+        update_cache: yes
+    - name: create bikobat.conf
+      copy:
+        dest: /etc/nginx/conf.d/bikobat.conf
+        content: |
+          server {
+            server_name  bikobat.com;
+            listen 80;
+          }
+    - name: create cms_bikobat.conf
+      copy:
+        dest: /etc/nginx/conf.d/cms_bikobat.conf
+        content: |
+          server {
+            server_name  cms_bikobat.com;
+            listen 80;
+          }
+    - name: create ws_bikobat.conf
+      copy:
+        dest: /etc/nginx/conf.d/ws_bikobat.conf
+        content: |
+          server {
+            server_name  cms.bikobat.com;
+            listen 80;
+          }
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+    - name: certbot ssl certificate
+      command: certbot --nginx -d bikobat.com -d cms.bikobat.com -d ws.bikobat.com
+

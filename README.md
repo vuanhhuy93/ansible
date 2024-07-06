@@ -45,4 +45,4 @@ ansible -i hosts/bo-prod-server java -m ping
 
 ## install java 21
 
-ansible-playbook -i hosts/bo-prod-server java playbook-install-java21.yml
+ansible-playbook -i hosts/bo-prod-server playbook-install-java21.yml
