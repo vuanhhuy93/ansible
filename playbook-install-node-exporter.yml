@@ -1,0 +1,68 @@
+- name: Install and configure Node Exporter
+  hosts: all
+  become: yes
+  tasks:
+#    - name: Download Node Exporter tarball
+#      ansible.builtin.get_url:
+#        url: https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz
+#        dest: /tmp/node_exporter-1.0.1.linux-amd64.tar.gz
+#
+#    - name: Ensure node_exporter group exists
+#      ansible.builtin.group:
+#        name: node_exporter
+#        state: present
+#
+#    - name: Ensure node_exporter user exists
+#      ansible.builtin.user:
+#        name: node_exporter
+#        group: node_exporter
+#        system: yes
+#        shell: /bin/false
+#        create_home: no
+#
+#    - name: Create /etc/node_exporter directory
+#      ansible.builtin.file:
+#        path: /etc/node_exporter
+#        state: directory
+#        owner: node_exporter
+#        group: node_exporter
+#        mode: '0755'
+#
+#    - name: Extract Node Exporter tarball
+#      ansible.builtin.unarchive:
+#        src: /tmp/node_exporter-1.0.1.linux-amd64.tar.gz
+#        dest: /tmp/
+#        remote_src: yes
+#
+#    - name: Move Node Exporter binary to /usr/bin
+#      command: mv /tmp/node_exporter-1.0.1.linux-amd64/node_exporter /usr/bin/node_exporter
+#
+    - name: Create Node Exporter systemd service file
+      ansible.builtin.copy:
+        dest: /usr/lib/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Documentation=https://prometheus.io/docs/guides/node-exporter/
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          Type=simple
+          Restart=on-failure
+          ExecStart=/usr/bin/node_exporter --web.listen-address=:9201
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start Node Exporter service
+      ansible.builtin.systemd:
+        name: node_exporter
+        state: started
+        enabled: yes
